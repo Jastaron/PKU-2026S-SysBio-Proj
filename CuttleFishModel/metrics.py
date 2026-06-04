@@ -51,6 +51,113 @@ def pair_correlation_like(points: np.ndarray, mask: np.ndarray | None = None, bi
     return centers, density
 
 
+def knn_distances(points: np.ndarray, k: int = 1) -> np.ndarray | float:
+    if len(points) < 2:
+        return np.nan
+    diff = points[:, None, :] - points[None, :, :]
+    dist = np.sqrt(np.sum(diff * diff, axis=2))
+    np.fill_diagonal(dist, np.inf)
+    k = max(1, min(int(k), len(points) - 1))
+    nearest = np.partition(dist, kth=k - 1, axis=1)[:, :k]
+    return np.mean(nearest, axis=1)
+
+
+def mean_knn_distance(points: np.ndarray, k: int = 1) -> float:
+    distances = knn_distances(points, k=k)
+    if isinstance(distances, float) and np.isnan(distances):
+        return np.nan
+    if distances.size == 0:
+        return np.nan
+    return float(np.mean(distances))
+
+
+def std_knn_distance(points: np.ndarray, k: int = 1) -> float:
+    distances = knn_distances(points, k=k)
+    if isinstance(distances, float) and np.isnan(distances):
+        return np.nan
+    if distances.size == 0:
+        return np.nan
+    return float(np.std(distances))
+
+
+def short_range_pair_density(bin_centers, density, cutoff=3.0):
+    '''
+    Compute the mean pair-density value within a short-distance window.
+
+    Parameters
+    ----------
+    bin_centers : array-like
+        Distance bin centers.
+    density : array-like
+        Pair-density values corresponding to bin_centers.
+    cutoff : float
+        Distances <= cutoff are treated as the short-range region.
+
+    Returns
+    -------
+    float
+        Mean pair density in the short-range window. Return np.nan if no bins are available.
+    '''
+    x = np.asarray(bin_centers, dtype=float)
+    y = np.asarray(density, dtype=float)
+    mask = x <= float(cutoff)
+    if not np.any(mask):
+        return np.nan
+    return float(np.nanmean(y[mask]))
+
+
+def first_pair_density_peak_distance(
+    bin_centers,
+    density,
+    max_distance=10.0,
+    smooth_window=3,
+    min_rel_height=0.5,
+):
+    '''
+    Estimate the first major peak distance of a pair-density curve.
+
+    The curve is restricted to bin_centers <= max_distance and lightly smoothed.
+    The function returns the first local maximum whose height is at least
+    min_rel_height times the maximum smoothed density in the window.
+    If no such local maximum is found, return the distance of the maximum
+    smoothed density within the window.
+    Return np.nan if the window is empty or all density values are NaN.
+    '''
+    x = np.asarray(bin_centers, dtype=float)
+    y = np.asarray(density, dtype=float)
+
+    mask = x <= float(max_distance)
+    x = x[mask]
+    y = y[mask]
+
+    valid = ~np.isnan(y)
+    x = x[valid]
+    y = y[valid]
+
+    if x.size == 0 or y.size == 0:
+        return np.nan
+
+    if int(smooth_window) <= 1:
+        y_smooth = y.copy()
+    else:
+        window = max(int(smooth_window), 1)
+        kernel = np.ones(window, dtype=float) / float(window)
+        y_smooth = np.convolve(y, kernel, mode="same")
+
+    if y_smooth.size == 0 or np.all(np.isnan(y_smooth)):
+        return np.nan
+
+    peak_threshold = float(min_rel_height) * float(np.nanmax(y_smooth))
+
+    if y_smooth.size >= 3:
+        for i in range(1, y_smooth.size - 1):
+            if y_smooth[i] >= y_smooth[i - 1] and y_smooth[i] >= y_smooth[i + 1]:
+                if y_smooth[i] >= peak_threshold:
+                    return float(x[i])
+
+    return float(x[int(np.nanargmax(y_smooth))])
+
+
 def color_counts(frame: Frame) -> dict[str, int]:
     return {
         "yellow": frame.yellow_count,
@@ -76,4 +183,3 @@ def timeline_to_dataframe(timeline: list[Frame]) -> pd.DataFrame:
             for frame in timeline
         ]
     )
-

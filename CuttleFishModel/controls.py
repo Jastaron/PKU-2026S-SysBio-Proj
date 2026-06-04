@@ -204,6 +204,10 @@ def summarize_result(result: dict) -> dict:
         "use_gap_birth": result.get("switches", {}).get("use_gap_birth"),
         "use_growth_displacement": result.get("switches", {}).get("use_growth_displacement"),
         "calibrated_birth_rate": result["birth_rate_scale"],
+        "knn_distance": math.nan,
+        "knn_distance_std": math.nan,
+        "short_range_pair_density": math.nan,
+        "first_pair_density_peak_distance": math.nan,
     }
 
 

@@ -15,7 +15,7 @@
 皮肤从中心小区域向外扩张，出生概率可概括为：
 
 $$
-P_{birth} = eta \cdot I(d_{all}) \cdot G(d_{black}) \cdot B(d_{boundary})
+P_{birth} = \eta \cdot I(d_{all}) \cdot G(d_{black}) \cdot B(d_{boundary})
 $$
 
 其中：
@@ -31,15 +31,15 @@ $$
 
 ## 4. 匹配随机对照
 
-- self: N = 185, CV_NND = 0.1692
-- random-development matched: N = 188, CV_NND = 0.6253
-- random-mask matched: N = 185, CV_NND = 0.4938
+- self: N = 214, CV_NND = 0.1635
+- random-development matched: N = 210, CV_NND = 0.4823
+- random-mask matched: N = 214, CV_NND = 0.4895
 
 ## 5. Ablation
 
-- no_repulsion: N = 183, CV_NND = 0.4512
-- no_gap_birth: N = 158, CV_NND = 0.1954
-- no_growth_displacement: N = 159, CV_NND = 0.2214
+- no_repulsion: N = 216, CV_NND = 0.4707
+- no_gap_birth: N = 196, CV_NND = 0.1989
+- no_growth_displacement: N = 195, CV_NND = 0.2139
 
 ## 6. 图解释
 

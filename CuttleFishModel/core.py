@@ -77,9 +77,6 @@ DEFAULT_PARAMS = {
     "render_scale": 8,
 }
 
-# Backward-compatible alias for notebook use.
-PARAMS = DEFAULT_PARAMS
-
 
 MODE_SWITCHES = {
     "self": {
