@@ -5,12 +5,14 @@ from .core import (
     SKIN,
     YELLOW,
     DEFAULT_PARAMS,
+    PARAMS,
     CuttlefishCA,
     Frame,
     Pigment,
     choose_final_step,
     pigment_display_size,
     pigment_stage,
+    simulate,
 )
 
 __all__ = [
@@ -20,11 +22,12 @@ __all__ = [
     "RED",
     "BLACK",
     "DEFAULT_PARAMS",
+    "PARAMS",
     "Pigment",
     "Frame",
     "CuttlefishCA",
     "pigment_stage",
     "pigment_display_size",
     "choose_final_step",
+    "simulate",
 ]
-

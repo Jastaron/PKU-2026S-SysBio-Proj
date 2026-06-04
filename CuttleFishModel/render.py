@@ -59,52 +59,87 @@ def draw_timeline_slices(axes, timeline: list[Frame], steps: list[int], params: 
         draw_frame(ax, frame, params, title=title, side_label=row_label if idx == 0 else None)
 
 
-def draw_nnd_distribution(ax: plt.Axes, nnd_map: dict[str, np.ndarray], labels: dict[str, str], colors: dict[str, str]) -> None:
+def draw_nnd_distribution(
+    ax: plt.Axes,
+    nnd_map: dict[str, np.ndarray],
+    labels: dict[str, str],
+    colors: dict[str, str],
+    *,
+    bins: np.ndarray | None = None,
+    linewidth: float = 2.2,
+    title: str = "NND Distribution",
+    legend_loc: str = "upper left",
+) -> None:
     all_vals = np.concatenate([vals for vals in nnd_map.values() if len(vals) > 0])
-    bins = np.linspace(0.0, max(8.0, np.percentile(all_vals, 99)), 26)
+    if bins is None:
+        bins = np.linspace(0.0, max(8.0, np.percentile(all_vals, 99)), 26)
     for model, values in nnd_map.items():
         ax.hist(
             values,
             bins=bins,
             density=True,
             histtype="step",
-            linewidth=2.2,
+            linewidth=linewidth,
             color=colors[model],
             label=labels[model],
         )
     ax.set_xlabel("Nearest-neighbour distance")
     ax.set_ylabel("Density")
-    ax.set_title("NND Distribution")
-    ax.legend(frameon=False, loc="upper left")
+    ax.set_title(title)
+    ax.legend(frameon=False, loc=legend_loc)
 
 
-def draw_cv_bar(ax: plt.Axes, summary_df, order: list[str], labels: list[str], colors: list[str], value_col: str = "CV_NND", ylabel: str = "CV of nearest-neighbour distance", title: str = "CV_NND Comparison") -> None:
+def draw_cv_bar(
+    ax: plt.Axes,
+    summary_df,
+    order: list[str],
+    labels: list[str],
+    colors: list[str],
+    *,
+    value_col: str = "CV_NND",
+    ylabel: str = "CV of nearest-neighbour distance",
+    title: str = "CV_NND Comparison",
+    value_label_fmt: str | None = None,
+) -> None:
     values = summary_df.set_index("model").loc[order, value_col].to_numpy()
     ax.bar(labels, values, color=colors, width=0.65)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
-    add_bar_value_labels(ax, values, fmt="{:.3f}" if value_col != "N" else "{:.0f}")
+    fmt = value_label_fmt or ("{:.3f}" if value_col != "N" else "{:.0f}")
+    add_bar_value_labels(ax, values, fmt=fmt)
 
 
-def draw_color_composition(ax: plt.Axes, metrics_df, fraction: bool = False) -> None:
+def draw_color_composition(
+    ax: plt.Axes,
+    metrics_df,
+    *,
+    fraction: bool = False,
+    colors: dict[str, str] | None = None,
+    linewidths: dict[str, float] | None = None,
+    title: str | None = None,
+) -> None:
+    if colors is None:
+        colors = {"yellow": "#ffcc33", "red": "#c94b23", "black": "#171411"}
+    if linewidths is None:
+        linewidths = {"yellow": 2.5, "red": 2.5, "black": 2.8}
     if fraction:
         data = metrics_df[["yellow_count", "red_count", "black_count"]].div(
             metrics_df["pigment_count"].replace(0, np.nan),
             axis=0,
         ).fillna(0.0)
         ylabel = "Fraction"
-        title = "Colour Fractions Over Time"
+        default_title = "Colour Fractions Over Time"
         ax.set_ylim(0.0, 1.0)
     else:
         data = metrics_df[["yellow_count", "red_count", "black_count"]]
         ylabel = "Chromatophore count"
-        title = "Colour Composition Over Time"
-    ax.plot(metrics_df["step"], data["yellow_count"], color="#ffcc33", linewidth=2.5, label="yellow")
-    ax.plot(metrics_df["step"], data["red_count"], color="#c94b23", linewidth=2.5, label="red")
-    ax.plot(metrics_df["step"], data["black_count"], color="#171411", linewidth=2.8, label="black")
+        default_title = "Colour Composition Over Time"
+    ax.plot(metrics_df["step"], data["yellow_count"], color=colors["yellow"], linewidth=linewidths["yellow"], label="yellow")
+    ax.plot(metrics_df["step"], data["red_count"], color=colors["red"], linewidth=linewidths["red"], label="red")
+    ax.plot(metrics_df["step"], data["black_count"], color=colors["black"], linewidth=linewidths["black"], label="black")
     ax.set_xlabel("Step")
     ax.set_ylabel(ylabel)
-    ax.set_title(title, pad=18)
+    ax.set_title(title or default_title, pad=18)
     ax.margins(y=0.08 if not fraction else 0.05)
 
 
@@ -127,13 +162,22 @@ def draw_parameter_heatmap(ax: plt.Axes, scan_df, value_col: str, cmap: str = "v
     return image
 
 
-def draw_pair_correlation(ax: plt.Axes, curve_map: dict[str, tuple[np.ndarray, np.ndarray]], labels: dict[str, str], colors: dict[str, str]) -> None:
+def draw_pair_correlation(
+    ax: plt.Axes,
+    curve_map: dict[str, tuple[np.ndarray, np.ndarray]],
+    labels: dict[str, str],
+    colors: dict[str, str],
+    *,
+    linewidth: float = 2.4,
+    title: str = "Pair-Correlation-Like Curve",
+    shade_until: float = 3.0,
+) -> None:
     for model, (centers, density) in curve_map.items():
-        ax.plot(centers, density, color=colors[model], linewidth=2.4, label=labels[model])
-    ax.axvspan(0.0, 3.0, color="#d9d9d9", alpha=0.25)
+        ax.plot(centers, density, color=colors[model], linewidth=linewidth, label=labels[model])
+    ax.axvspan(0.0, shade_until, color="#d9d9d9", alpha=0.25)
     ax.set_xlabel("Pair distance")
     ax.set_ylabel("Pair-count density")
-    ax.set_title("Pair-Correlation-Like Curve")
+    ax.set_title(title)
     ax.legend(frameon=False)
 
 
@@ -241,4 +285,3 @@ def rasterize_pigment_cells(pigment, params: dict, grid_size: int) -> tuple[np.n
         rows = [int(np.clip(round(rr_center), 0, grid_size - 1))]
         cols = [int(np.clip(round(cc_center), 0, grid_size - 1))]
     return np.asarray(rows, dtype=int), np.asarray(cols, dtype=int)
-

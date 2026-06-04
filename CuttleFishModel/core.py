@@ -77,6 +77,9 @@ DEFAULT_PARAMS = {
     "render_scale": 8,
 }
 
+# Backward-compatible alias for notebook use.
+PARAMS = DEFAULT_PARAMS
+
 
 MODE_SWITCHES = {
     "self": {
@@ -221,6 +224,13 @@ def choose_final_step(timeline: list[Frame], params: dict) -> int:
             best_score = score
             best_step = frame.step
     return best_step
+
+
+def simulate(params: dict | None = None) -> tuple[list[Frame], int]:
+    model = CuttlefishCA(params=params, mode="self", seed=None, birth_rate_scale=1.0)
+    timeline = model.simulate()
+    final_step = choose_final_step(timeline, model.params)
+    return timeline, final_step
 
 
 class CuttlefishCA:

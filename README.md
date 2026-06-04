@@ -10,10 +10,12 @@ Cuttlefish pigment cell generation cellular automaton model.
 - `CuttleFishModel/render.py`: matplotlib drawing helpers that draw on passed axes
 - `CuttleFish_run.py`: notebook-style entry script with `# %%` cells
 
-## Run
+## Interactive Workflow
 
 ```bash
 python CuttleFish_run.py
 ```
 
-This script is notebook-style. Running it from the terminal executes only a lightweight smoke test and saves one final-frame preview. In VS Code / Jupyter-style editors, run cells individually to generate the GIF, figures, and CSV files into `results/`.
+Use `CuttleFish_run.ipynb` as the primary workflow. Each figure has its own cell, and figure size, dpi, titles, bins, colors, legends, and save paths are all editable directly in the notebook.
+
+`CuttleFish_run.py` is only a lightweight companion entrypoint that prints the notebook path and does not run the full pipeline.
