@@ -2,16 +2,15 @@
 
 Cuttlefish pigment cell generation cellular automaton model.
 
-## Scripts
+## Structure
 
-- `SysBio_color.py`: earliest baseline script
-- `SysBio_color_growth_CA.py`: growth-based CA toy model
-- `SysBio_color_growth_CA_intercalated.py`: current intercalated CA model used for the main GIF
+- `CuttleFishModel/`: model, analysis, visualization, and workflow package
+- `CuttleFish_run.py`: unified notebook-style entry script
 
 ## Run
 
 ```bash
-python SysBio_color_growth_CA_intercalated.py
+python CuttleFish_run.py
 ```
 
-The script will create `results/01_intercalated_development.gif`.
+The script will generate the intercalated GIF plus all report figures and tables into `results/`.
