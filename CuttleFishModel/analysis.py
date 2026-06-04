@@ -565,20 +565,24 @@ def save_fig1_development_slices(
     self_timeline: list[dict],
     self_final_step: int,
     random_timeline: list[dict],
+    random_final_step: int,
     out_path: Path,
     params: dict,
 ) -> None:
     """Figure 1: development slices for self-organized vs matched random-development."""
-    steps = np.linspace(0, self_final_step, 5)
-    steps = sorted({int(round(x)) for x in steps})
-    while len(steps) < 5:
-        steps.append(min(self_final_step, steps[-1] + 1))
-    steps = steps[:5]
+    shared_steps = np.linspace(0, self_final_step, 4)
+    shared_steps = sorted({int(round(x)) for x in shared_steps})
+    while len(shared_steps) < 4:
+        shared_steps.append(min(self_final_step, shared_steps[-1] + 1))
+    shared_steps = shared_steps[:4]
+    self_steps = shared_steps + [self_final_step]
+    random_steps = shared_steps + [random_final_step]
 
-    fig, axes = plt.subplots(2, len(steps), figsize=(3.8 * len(steps), 7.2), constrained_layout=True)
+    fig, axes = plt.subplots(2, 5, figsize=(19.0, 7.2), constrained_layout=True)
     rows = [("Self-organized", self_timeline), ("Random-development matched", random_timeline)]
     for row_idx, (label, timeline) in enumerate(rows):
-        for col_idx, step in enumerate(steps):
+        mode_steps = self_steps if row_idx == 0 else random_steps
+        for col_idx, step in enumerate(mode_steps):
             frame = timeline[step]
             ax = axes[row_idx, col_idx]
             render_ca_on_axis(ax, frame, params, side_label=label if col_idx == 0 else None)
@@ -948,10 +952,27 @@ full self-organized 同时包含三项局部机制：
 
 def main() -> None:
     base_dir = Path(__file__).resolve().parent.parent
-    results_dir = base_dir / "results_report"
-    if results_dir.exists():
-        shutil.rmtree(results_dir)
+    results_dir = base_dir / "results"
+    legacy_results_dir = base_dir / "results_report"
     results_dir.mkdir(parents=True, exist_ok=True)
+    report_outputs = [
+        "Fig1_development_slices_self_vs_random.png",
+        "Fig2_nnd_distribution_and_cv.png",
+        "Fig3_color_composition_over_time.png",
+        "Fig4_parameter_phase_heatmap.png",
+        "Fig5_pair_correlation.png",
+        "Fig6_ablation_summary.png",
+        "Fig7_ablation_final_patterns.png",
+        "random_vs_self_summary.csv",
+        "ablation_summary.csv",
+        "metrics_over_time.csv",
+        "parameter_scan.csv",
+        "model_math_summary.md",
+    ]
+    for name in report_outputs:
+        path = results_dir / name
+        if path.exists():
+            path.unlink()
 
     params = dict(PARAMS)
     display_seed = params["seed"]
@@ -1041,6 +1062,7 @@ def main() -> None:
         full_timeline,
         full_final_step,
         timelines["random_development_matched"],
+        final_steps["random_development_matched"],
         results_dir / "Fig1_development_slices_self_vs_random.png",
         params,
     )
@@ -1098,6 +1120,8 @@ def main() -> None:
         f"target_gap_to_black={best_order_row['target_gap_to_black']:.1f}, "
         f"order_score={best_order_row['order_score']:.6f}"
     )
+    if legacy_results_dir.exists():
+        shutil.rmtree(legacy_results_dir)
 
 
 if __name__ == "__main__":

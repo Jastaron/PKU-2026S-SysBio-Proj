@@ -699,9 +699,9 @@ def main() -> None:
     base_dir = Path(__file__).resolve().parent.parent
     result_dir = base_dir / "results"
     tmp_dir = result_dir / "_tmp_frames"
-    if result_dir.exists():
-        shutil.rmtree(result_dir)
     result_dir.mkdir(parents=True, exist_ok=True)
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir)
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     params = dict(PARAMS)
@@ -718,6 +718,8 @@ def main() -> None:
         frame_paths.append(output_path)
 
     gif_path = result_dir / "01_intercalated_development.gif"
+    if gif_path.exists():
+        gif_path.unlink()
     create_gif(frame_paths, gif_path, params["gif_duration_ms"])
     shutil.rmtree(tmp_dir)
 
