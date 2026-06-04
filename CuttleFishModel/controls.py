@@ -46,12 +46,18 @@ def run_self(params: dict | None = None, seed: int | None = None) -> dict:
     return _run_mode_impl("self", params=params, seed=seed, birth_rate_scale=1.0, capture_timeline=True)
 
 
-def run_random_development_matched(params: dict | None, target_N: int, seed: int) -> dict:
+def run_random_development_matched(
+    params: dict | None,
+    target_N: int,
+    seed: int,
+    comparison_step: int | None = None,
+) -> dict:
     matched = _run_matched_mode(
         "random_development_matched",
         params=params,
         target_N=target_N,
         seed=seed,
+        comparison_step=comparison_step,
     )
     return matched
 
@@ -99,7 +105,13 @@ def run_random_mask(frame: Frame, target_N: int, seed: int) -> dict:
     }
 
 
-def run_ablation(params: dict | None, mode: str, target_N: int | None = None, seed: int | None = None) -> dict:
+def run_ablation(
+    params: dict | None,
+    mode: str,
+    target_N: int | None = None,
+    seed: int | None = None,
+    comparison_step: int | None = None,
+) -> dict:
     if mode == "random_mask":
         raise ValueError("Use run_random_mask(frame, target_N, seed) for random_mask.")
     if mode == "self":
@@ -107,11 +119,29 @@ def run_ablation(params: dict | None, mode: str, target_N: int | None = None, se
     if mode == "random_development_matched":
         if target_N is None:
             raise ValueError("target_N is required for random_development_matched.")
-        return run_random_development_matched(params=params, target_N=target_N, seed=seed if seed is not None else DEFAULT_PARAMS["seed"])
+        return run_random_development_matched(
+            params=params,
+            target_N=target_N,
+            seed=seed if seed is not None else DEFAULT_PARAMS["seed"],
+            comparison_step=comparison_step,
+        )
 
     if mode in {"no_repulsion", "no_gap_birth"} and target_N is not None:
-        return _run_matched_mode(mode, params=params, target_N=target_N, seed=seed if seed is not None else DEFAULT_PARAMS["seed"])
-    return _run_mode(mode, params=params, seed=seed, birth_rate_scale=1.0)
+        return _run_matched_mode(
+            mode,
+            params=params,
+            target_N=target_N,
+            seed=seed if seed is not None else DEFAULT_PARAMS["seed"],
+            comparison_step=comparison_step,
+        )
+    return _run_mode_impl(
+        mode,
+        params=params,
+        seed=seed,
+        birth_rate_scale=1.0,
+        capture_timeline=True,
+        comparison_step=comparison_step,
+    )
 
 
 def scan_parameter_landscape(
@@ -177,15 +207,38 @@ def summarize_result(result: dict) -> dict:
     }
 
 
-def _run_mode(mode: str, params: dict | None, seed: int | None, birth_rate_scale: float) -> dict:
-    return _run_mode_impl(mode, params=params, seed=seed, birth_rate_scale=birth_rate_scale, capture_timeline=True)
+def _run_mode(
+    mode: str,
+    params: dict | None,
+    seed: int | None,
+    birth_rate_scale: float,
+    comparison_step: int | None = None,
+) -> dict:
+    return _run_mode_impl(
+        mode,
+        params=params,
+        seed=seed,
+        birth_rate_scale=birth_rate_scale,
+        capture_timeline=True,
+        comparison_step=comparison_step,
+    )
 
 
-def _run_mode_impl(mode: str, params: dict | None, seed: int | None, birth_rate_scale: float, capture_timeline: bool) -> dict:
+def _run_mode_impl(
+    mode: str,
+    params: dict | None,
+    seed: int | None,
+    birth_rate_scale: float,
+    capture_timeline: bool,
+    comparison_step: int | None = None,
+) -> dict:
     model = CuttlefishCA(params=params, mode=mode, seed=seed, birth_rate_scale=birth_rate_scale)
     if capture_timeline:
         timeline = model.simulate()
-        final_step = choose_final_step(timeline, model.params)
+        if comparison_step is None:
+            final_step = choose_final_step(timeline, model.params)
+        else:
+            final_step = int(np.clip(comparison_step, 0, len(timeline) - 1))
         final_frame = timeline[final_step]
     else:
         model.initialize()
@@ -206,7 +259,13 @@ def _run_mode_impl(mode: str, params: dict | None, seed: int | None, birth_rate_
     }
 
 
-def _run_matched_mode(mode: str, params: dict | None, target_N: int, seed: int) -> dict:
+def _run_matched_mode(
+    mode: str,
+    params: dict | None,
+    target_N: int,
+    seed: int,
+    comparison_step: int | None = None,
+) -> dict:
     base_params = dict(DEFAULT_PARAMS)
     if params:
         base_params.update(params)
@@ -214,8 +273,21 @@ def _run_matched_mode(mode: str, params: dict | None, target_N: int, seed: int) 
     rough_scale = DEFAULT_BIRTH_SCALE_GUESSES.get(mode)
     if rough_scale is None:
         rough_scale = _coarse_birth_scale_search(base_params, mode, target_N, seed)
-    matched_scale = _refine_birth_scale_search(base_params, mode, target_N, seed, rough_scale)
-    return _run_mode(mode, params=base_params, seed=seed, birth_rate_scale=matched_scale)
+    matched_scale = _refine_birth_scale_search(
+        base_params,
+        mode,
+        target_N,
+        seed,
+        rough_scale,
+        comparison_step=comparison_step,
+    )
+    return _run_mode(
+        mode,
+        params=base_params,
+        seed=seed,
+        birth_rate_scale=matched_scale,
+        comparison_step=comparison_step,
+    )
 
 
 def _coarse_birth_scale_search(params: dict, mode: str, target_N: int, seed: int) -> float:
@@ -233,24 +305,38 @@ def _coarse_birth_scale_search(params: dict, mode: str, target_N: int, seed: int
     return best_scale
 
 
-def _refine_birth_scale_search(params: dict, mode: str, target_N: int, seed: int, initial_scale: float) -> float:
+def _refine_birth_scale_search(
+    params: dict,
+    mode: str,
+    target_N: int,
+    seed: int,
+    initial_scale: float,
+    comparison_step: int | None = None,
+) -> float:
     scale = max(initial_scale, 0.0002)
     best_scale = scale
     best_score: tuple[float, float, float, float] | None = None
 
-    for _ in range(1):
-        multipliers = [0.75, 0.90, 1.00, 1.10, 1.35]
+    for _ in range(3):
+        multipliers = [0.60, 0.75, 0.90, 1.00, 1.10, 1.25, 1.50]
         candidate_scales = sorted({max(0.0002, scale * m) for m in multipliers})
         best_local_scale = scale
 
         for candidate_scale in candidate_scales:
-            result = _run_mode_impl(mode, params=params, seed=seed, birth_rate_scale=float(candidate_scale), capture_timeline=True)
+            result = _run_mode_impl(
+                mode,
+                params=params,
+                seed=seed,
+                birth_rate_scale=float(candidate_scale),
+                capture_timeline=True,
+                comparison_step=comparison_step,
+            )
             frame = result["final_frame"]
             rel_error = abs(frame.pigment_count - target_N) / max(target_N, 1)
             y_frac, r_frac, b_frac = _color_fractions(frame)
             overfill_penalty = max(0.0, frame.pigment_count - 1.10 * target_N) / max(target_N, 1)
             score = (
-                0.0 if rel_error <= 0.10 else 1.0,
+                0.0 if rel_error <= 0.05 else 1.0,
                 rel_error,
                 r_frac,
                 overfill_penalty - max(0.0, b_frac - y_frac),
