@@ -4,22 +4,15 @@
 
 ## 使用指南
 
-请直接打开并阅读：
+请直接打开：
 
 - `CuttleFish_run.ipynb`
 
-这个 notebook 是当前项目的主工作流，已经按分析步骤拆成多个单元格，适合：
-
-- 单独运行 self-organized 模型
-- 单独运行 matched random / ablation 对照
-- 单独生成每一张报告图
-- 直接在对应单元格里修改 figsize、dpi、颜色、bins、legend、标题和保存路径
-
-如果你只是想理解项目、复现实验或微调图，优先看 notebook。
+这个 notebook 是本项目主要流程，完成了跑模型，数据统计和可视化等一系列操作，如果想理解项目、复现实验或微调图，请优先看这个 notebook。
 
 ## 项目结构
 
-- `CuttleFish_run.ipynb`：主入口，交互式分析与出图工作流
+- `CuttleFish_run.ipynb`：交互式脚本
 - `CuttleFishModel/core.py`：核心 CA 模型与数据结构
 - `CuttleFishModel/metrics.py`：NND、pair-correlation、timeline 指标整理
 - `CuttleFishModel/controls.py`：matched random 对照与 ablation
@@ -30,8 +23,8 @@
 
 1. 在 Jupyter Notebook 或 VS Code Notebook 模式下打开 `CuttleFish_run.ipynb`
 2. 先运行 imports / parameters / self-organized model 相关单元格
-3. 再按需运行具体图的单元格，而不是一次性全部跑完
-4. 修改图形细节时，直接在对应 cell 内调整参数
+3. 再按需运行具体图的单元格
+4. 修改图形细节时，直接在对应单元格内调整参数
 
 ## 环境
 
