@@ -1,4 +1,4 @@
-# PKU-2026S-SysBio-Proj
+# WeiJC-PKU-2026S-SysBio-Proj
 
 这是一个基于二维元胞自动机的乌贼皮肤色素细胞发育 toy model 项目。
 
