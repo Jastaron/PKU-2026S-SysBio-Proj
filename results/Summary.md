@@ -1,4 +1,4 @@
-# model_math_summary_2034
+# 建模总结
 
 ## 1. 建模摘要
 
@@ -109,7 +109,7 @@ $$
 边界惩罚项用于避免新生色素细胞过度集中在刚长出的皮肤外缘。设 $d_e(x,t)$ 是候选位置到当前皮肤边界的距离，则：
 
 $$
-E(x,t)=\left[1+\exp\left({\frac{-d_e(x,t)-d_e*}{s_e}}\right)\right]^{-1}
+E(x,t)=\left[1+\exp\left({-\frac{d_e(x,t)-d_e*}{s_e}}\right)\right]^{-1}
 $$
 
 其中 $d_e*$ 对应 `min_boundary_distance`，$s_e$ 对应 `boundary_softness`。当候选位置过于靠近皮肤边界时，$E(x,t)$ 较小，出生概率被抑制。
@@ -149,8 +149,8 @@ $$
 \begin{eqnarray}
 \begin{cases}
  &\text{yellow}, &a\lt T_y\\
- &\text{red}, &T_y\le a\le T_y+T_r\\
- &\text{black}, &a\gt T_y+T_r
+ &\text{red}, &T_y\le a\lt T_y+T_r\\
+ &\text{black}, &a\ge T_y+T_r
 \end{cases}
 \end{eqnarray}
 $$
