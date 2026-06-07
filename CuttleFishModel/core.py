@@ -6,7 +6,7 @@ import math
 import numpy as np
 
 
-# 元胞自动机中的五种格点状态：空白、普通皮肤、黄色新生、红色过渡、黑色成熟。
+# 元胞自动机中的五种格点状态
 EMPTY = 0
 SKIN = 1
 YELLOW = 2
@@ -16,84 +16,84 @@ BLACK = 4
 
 DEFAULT_PARAMS = {
     # 基本设置
-    "seed": 7,          # 随机种子，保证整套发育过程可复现。
-    "grid_size": 100,   # 元胞自动机棋盘边长，即皮肤区域所在的二维网格大小。
-    "n_steps": 170,     # 总模拟步数，对应一个完整的发育时间窗口。
+    "seed": 7,
+    "grid_size": 100,
+    "n_steps": 170,
 
     # 初始皮肤与初始色素细胞
-    "initial_radius_x": 8.0,    # 初始椭圆皮肤区域在 x 方向的半轴长度。
-    "initial_radius_y": 6.5,    # 初始椭圆皮肤区域在 y 方向的半轴长度。
-    "initial_pigments": 4,      # 初始皮肤中预放置的少量色素细胞数量，用于启动阵列形成。
+    "initial_radius_x": 8.0,
+    "initial_radius_y": 6.5,
+    "initial_pigments": 4,
 
     # 皮肤生长
-    "growth_rate": 0.94,            # 基础皮肤生长率，控制边界空白格转为皮肤的总体概率尺度。
-    "growth_power": 0.95,           # 邻域皮肤依赖指数，邻居越多则生长概率提升越明显。
-    "growth_curve_exponent": 1.35,  # 生长调度的缓动指数，决定整体发育由快到慢的时间曲线。
-    "radial_growth_softness": 1.2,  # 径向生长门控的平滑尺度，控制目标半径附近的过渡宽度。
-    "radial_growth_margin": 0.9,    # 目标半径之外允许的额外生长边缘宽度。
-    "late_growth_floor": 0.24,      # 发育后期仍保留的最低生长速度比例，避免完全停止生长。
-    "final_growth_radius": 49.0,    # 最终皮肤目标半径，决定成熟时皮肤区域的大致尺度。
+    "growth_rate": 0.94,
+    "growth_power": 0.95,
+    "growth_curve_exponent": 1.35,
+    "radial_growth_softness": 1.2,
+    "radial_growth_margin": 0.9,
+    "late_growth_floor": 0.24,
+    "final_growth_radius": 49.0,
 
     # 色素细胞出生候选与出生配额
-    "min_skin_age_for_diff": 2,         # 普通皮肤细胞至少经历多少步后才允许分化为色素细胞。
-    "candidate_sample_size": 2400,      # 每一步最多抽样多少个候选皮肤位置来评估出生概率。
-    "base_birth_rate": 0.82,            # 新生黄色色素细胞的基础出生率系数。
-    "birth_prob_cap": 0.78,             # 单个候选位置出生概率的上限，避免某一步出现过强爆发。
-    "max_new_pigments_per_step": 10,    # 每一步最多允许新增的色素细胞数。
-    "birth_quota_base": 1.0,            # 动态出生配额的基础项，保证早期至少有少量新生细胞。
-    "birth_quota_skin_scale": 0.0011,   # 出生配额随可分化皮肤面积增加的比例系数。
-    "birth_quota_deficit_scale": 0.08,  # 出生配额随目标细胞数缺口增加的补偿强度。
-    "target_area_per_pigment": 28.0,    # 目标上每个色素细胞平均对应的皮肤面积，用于估计目标密度。
+    "min_skin_age_for_diff": 2,
+    "candidate_sample_size": 2400,
+    "base_birth_rate": 0.82,
+    "birth_prob_cap": 0.78,
+    "max_new_pigments_per_step": 10,
+    "birth_quota_base": 1.0,
+    "birth_quota_skin_scale": 0.0011,
+    "birth_quota_deficit_scale": 0.08,
+    "target_area_per_pigment": 28.0,
 
     # 短程抑制与最小间距
-    "absolute_min_distance": 2.6,   # 新生细胞与已有细胞之间的绝对最小允许距离。
-    "all_spacing_softness": 0.9,    # 抑制场随距离衰减的平滑尺度。
-    "field_threshold": 0.92,        # 总抑制场阈值，超过后出生允许度迅速下降。
-    "field_softness": 0.18,         # 抑制场阈值函数的平滑程度。
+    "absolute_min_distance": 2.6,
+    "all_spacing_softness": 0.9,
+    "field_threshold": 0.92,
+    "field_softness": 0.18,
 
     # 成熟黑色阵列间隙偏好
-    "target_gap_to_black": 5.0,     # 新生黄色细胞最偏好的成熟黑色阵列间隙距离。
-    "target_gap_sigma": 1.6,        # 对目标插空距离允许的波动范围。
-    "bootstrap_gap_to_all": 5.5,    # 黑色细胞尚少时，改为参考全部色素细胞的启动间隙距离。
-    "bootstrap_black_count": 18,    # 黑色细胞达到该数量后，才正式切换到成熟黑阵列插空规则。
-    "black_gap_weight": 1.55,       # 成熟黑色阵列插空偏好的权重。
-    "fallback_gap_weight": 1.15,    # 启动阶段基于全部细胞插空偏好的权重。
+    "target_gap_to_black": 5.0,
+    "target_gap_sigma": 1.6,
+    "bootstrap_gap_to_all": 5.5,
+    "bootstrap_black_count": 18,
+    "black_gap_weight": 1.55,
+    "fallback_gap_weight": 1.15,
 
     # 边界惩罚与中心启动
-    "min_boundary_distance": 3.2,           # 距离皮肤边界过近时，新生色素细胞会被抑制的阈值距离。
-    "boundary_softness": 0.9,               # 边界惩罚从强到弱过渡的平滑尺度。
-    "center_birth_floor": 0.28,             # 中心启动门控的最低值，避免外围区域完全失去出生机会。
-    "center_birth_sigma_fraction": 0.48,    # 中心门控的空间尺度，相对于当前皮肤有效半径设定。
+    "min_boundary_distance": 3.2,
+    "boundary_softness": 0.9,
+    "center_birth_floor": 0.28,
+    "center_birth_sigma_fraction": 0.48,
 
     # 年龄依赖颜色成熟
-    "yellow_duration": 28,          # 黄色阶段持续步数，表示新生色素细胞的较长早期阶段。
-    "red_duration": 3,              # 红色阶段持续步数，表示短暂过渡态。
-    "black_growth_duration": 26,    # 进入黑色后继续变大的时间尺度，只影响显示尺寸不改颜色。
+    "yellow_duration": 28,
+    "red_duration": 3,
+    "black_growth_duration": 26,
 
     # 年龄依赖抑制半径
-    "inhibition_birth_radius": 8.6,     # 新生细胞刚出生时的抑制半径。
-    "inhibition_mature_radius": 4.2,    # 成熟后抑制半径衰减到的下限。
-    "inhibition_radius_decay": 0.18,    # 抑制半径随年龄减小的速度。
+    "inhibition_birth_radius": 8.6,
+    "inhibition_mature_radius": 4.2,
+    "inhibition_radius_decay": 0.18,
 
     # 随皮肤生长的被动位移
-    "growth_motion_strength": 1.0,  # 皮肤扩张时色素细胞被组织拉开的径向位移强度。
+    "growth_motion_strength": 1.0,
 
     # 局部斥力与重排
-    "relax_iterations": 2,      # 每一步局部重排迭代次数。
-    "relax_strength": 0.38,     # 过近细胞被推开的强度。
-    "relax_buffer": 0.35,       # 在显示尺寸之外额外保留的最小缓冲距离。
+    "relax_iterations": 2,
+    "relax_strength": 0.38,
+    "relax_buffer": 0.35,
 
     # 元胞格点显示尺寸
-    "size_start_scale": 0.52,       # 色素细胞刚出生时，相对其基准尺寸的显示比例。
-    "size_yellow_end_scale": 0.90,  # 黄色阶段结束时的显示比例。
-    "size_red_end_scale": 1.05,     # 红色阶段结束时的显示比例。
-    "size_black_end_scale": 1.42,   # 黑色成熟后最终显示比例。
-    "size_softness_power": 0.78,    # 尺寸随年龄增长时的缓动指数。
+    "size_start_scale": 0.52,
+    "size_yellow_end_scale": 0.90,
+    "size_red_end_scale": 1.05,
+    "size_black_end_scale": 1.42,
+    "size_softness_power": 0.78,
 
     # 输出帧采样与 GIF 渲染
-    "frame_stride": 2,      # 导出动画时每隔多少步取一帧。
-    "gif_duration_ms": 150, # GIF 中每帧停留时间，单位毫秒。
-    "render_scale": 8,      # 可视化时将 CA 格点放大的倍率。
+    "frame_stride": 2,
+    "gif_duration_ms": 150,
+    "render_scale": 8,
 }
 
 
