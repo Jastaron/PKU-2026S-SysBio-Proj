@@ -16,7 +16,6 @@
 - `CuttleFishModel/core.py`：核心 CA 模型与数据结构
 - `CuttleFishModel/metrics.py`：NND、pair-correlation、timeline 指标整理
 - `CuttleFishModel/controls.py`：matched random 对照与 ablation
-- `CuttleFishModel/render.py`：底层绘图辅助函数
 - `results/`：模型 GIF、报告图和导出的 CSV / Markdown
 
 ## 推荐流程
